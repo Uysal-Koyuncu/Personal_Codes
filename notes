@@ -1,0 +1,46 @@
+Column vector:
+set = []
+for i in columns:
+    set1 = set & i
+    if set1.checkmatrix = true:
+        set.append(i)
+
+checkmatrix:
+1. make the matrix
+2. remove the rows that represent higher orders than that we are processing
+3. check if there are any 0x=a form
+4. calculate the rank, check if rank(a) = rank(a,b)
+5. if we finally get a solution, then return false. Else return true.
+
+making the matrix:
+matrix = []
+for each column:
+    get the column vector
+    parse each entry, store into a list of entry strings (["1", "4x2"])
+    for compensator in compensate_space:
+        temp = compensate_column(stringlist, compensator) -- IS IT DOABLE?
+        concatenate temp into a n*220-long vector
+        matrix.append()
+
+
+
+
+making the matrix:
+neworder = the highest order of the newly added column (the last one), assumed to be >= the previous ones.
+for each column:
+     highorder = the highest order of the column's entry polynomials
+     ideallist = []
+     for each entry:
+        ideallist.append(generateideal(entry, neworder - highorder))
+
+     matrix = []
+     concatenated = []
+     for i in range(dimension of compensated space):
+        for j in ideallist:
+            concatenated.append(ideallist[j][i]'s elements NOT THE LIST ITSELF!)
+            # or use another iteration to do it.
+
+        We now get the 1st compensation of entries 1~n combined.
+        matrix.append(concatenated)
+        concatenated = []
+
