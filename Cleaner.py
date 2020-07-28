@@ -13,6 +13,7 @@ text = """| 1 x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110y2z2-
     MONOMIAL_SET_LENGTH: = 220
     
     mdic: the monomial dictionary
+    pdic: the reverse of mdic
         @Function conditional_add: helper function for the mdic construction
     {'x': 1, 'y': 2, 'z': 3,
     'x2': 4, 'xy': 5, 'y2': 6, 'xz': 7, 'yz': 8, 'z2': 9,
@@ -58,6 +59,7 @@ def condition_add(target, coordinate, power):
 
 
 mdic = {}
+pdic = {}
 pos = 0
 for num in range(1, 10):
 
@@ -70,8 +72,10 @@ for num in range(1, 10):
             mono = condition_add(mono, "y", bar2 - bar1)
             mono = condition_add(mono, "z", num - bar2)
             mdic[mono] = pos
+            pdic[pos] = mono
 
 mdic["1"] = 0
+pdic[0] = "1"
 
 
 # ===================================FUNCTIONS==========================================================================
@@ -87,10 +91,10 @@ mdic["1"] = 0
 
 def parse_text(input_text):
     rows = []
-    rows_index = [i for i in range(len(text)) if text.find('|', i) == i]  # The indices of '|' signs
+    rows_index = [i for i in range(len(input_text)) if input_text.find('|', i) == i]  # The indices of '|' signs
 
     for x in zip(rows_index[::2], rows_index[1::2]):
-        row = text[x[0] + 2:x[1]]
+        row = input_text[x[0] + 2:x[1]]
         row = row.split()
         rows.append(row)
 
@@ -152,19 +156,30 @@ def parse_vector(input_vector):
 #             param_list: the list of returns
 #             monomial: the monomial returned
 #             coefficient: the coefficient that should be put in the right index.
+#         @Auxilliary:
+#             cdic: the dictionary used to represent different results of the coefficient param. (ABANDONED HERE.)
 '''TODO(?): this part needs thorough inspection, some minor edge cases might happen.'''
+
 
 def monomial_get_coefficient(input_monomial):
 
     param_list = []
+    # print(input_monomial)
     coefficient = re.split('[xyz]', input_monomial)[0]
     monomial = input_monomial[len(coefficient):]
     if coefficient == "":
         coefficient = 1
+    elif coefficient == "-":
+        coefficient = -1
     else:
         coefficient = int(coefficient)
     param_list.append(coefficient)
     param_list.append(monomial)
+
+    if input_monomial == "0":
+        param_list[0] = 0
+        param_list[1] = "1"
+
     return param_list
 
 
@@ -189,10 +204,10 @@ def parse_entry(input_entry):
             mex += mon
         else:
             mex += mon
-            print(mex)
             if mex != "":
-                param_list = monomial_get_coefficient(mon)
+                param_list = monomial_get_coefficient(mex)
                 mon_coefficient = param_list[0]
+                # print(param_list)
                 mon_position = mdic[param_list[1]]
                 parsed_entry[mon_position] = mon_coefficient
             mex = ""
@@ -200,8 +215,133 @@ def parse_entry(input_entry):
     # print(parsed_entry)
     return parsed_entry
 
-print(parse_entry("x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110y2z2-48xz3-120yz3-45z4"))
-# print(parse_vector(get_column_vector(parse_text(text))[1]))
+#print(parse_entry("-x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110y2z2-48xz3-120yz3-45z4"))
+print(parse_vector(get_column_vector(parse_text(text))[1]))
+
+
+# parse_monomial: Given a monomial in string form, return its power for x, y, and z.
+
+def parse_monomial(monomial):
+    coeff_list = [0] * 3
+
+    char_list = ["x", "y", "z"]
+    pos_list = [0] * 3
+    for i in range(3):
+        pos_list[i] = monomial.find(char_list[i])
+        if pos_list[i] == -1:
+            coeff_list[i] = 0
+
+    for i in range(2, -1, -1):
+        if pos_list[i] != -1:
+            residual = monomial[pos_list[i] + 1:]
+            if residual == "":
+                coeff_list[i] = 1
+            else:
+                coeff_list[i] = int(residual)
+            monomial = monomial[:pos_list[i]]
+
+    return coeff_list
+
+# monomial_to_string: Give a list of coefficients, generate the monomial string.
+
+
+def monomial_to_string(coeff_list):
+
+    if coeff_list == [0,0,0]:
+        return "1"
+
+    monomial = ""
+    char_set = ["x", "y", "z"]
+    for i in range(3):
+        if coeff_list[i] != 0:
+            monomial += char_set[i]
+            if coeff_list[i] != 1:
+                monomial += str(coeff_list[i])
+
+    return monomial
+
+
+# generate_compensated_vector: Given a vector and a compensator monomial, return the multiplied vector, i.e. each
+#     element is compensated by the compensator.
+#     @Param:
+#         Input:
+#         input_vector: the input vector
+#         compensator: the monomial that needs to be multiplied to each element
+#         Output:
+#         compensated_vector: the compensated vector in R^n form.
+
+def generate_compensated_vector(input_vector, compensator):
+
+    compensated_vector = [0] * MONOMIAL_SET_LENGTH
+    epos = 0
+    for element in input_vector:
+        if element != 0:
+            coeff_list = parse_monomial(pdic[epos])
+            coeff_added_list = parse_monomial(compensator)
+            for i in range(len(coeff_list)):
+                coeff_list[i] += coeff_added_list[i]
+            pos = mdic[monomial_to_string(coeff_list)]
+            compensated_vector[pos] = element
+        epos += 1
+
+    return compensated_vector
+
+# generate_monomial_space: Given a dimension, generate the respective monomial space.
+
+
+def generate_monomial_space(dimension):
+    mspace = ["1"]
+    for num in range(1, dimension + 1):
+        for bar2 in range(num, -1, -1):
+            for bar1 in range(bar2, -1, -1):
+                mono = ""
+                mono = condition_add(mono, "x", bar1)
+                mono = condition_add(mono, "y", bar2 - bar1)
+                mono = condition_add(mono, "z", num - bar2)
+                mspace.append(mono)
+    return mspace
+
+
+# generate_ideal: Given a parsed vector, generate its related ideal, given the order-difference.
+#     @Param:
+#         Input:
+#         input_vector: the vector input from parse_vector.
+#         order_difference: the number of orders that we have to compensate.
+#         Output:
+#         generated_ideal: the generated ideal.
+
+def generate_ideal(input_vector, order_difference):
+
+    generated_ideal = []
+    compensation_space = generate_monomial_space(order_difference)
+    for some_monomial in compensation_space:
+        generated_ideal.append(generate_compensated_vector(input_vector, some_monomial))
+    return generated_ideal
+
+# Test Purposes
+# k = generate_ideal(parse_entry("-x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110y2z2-48xz3-120yz3-45z4"),1)
+# for element in k:
+#     pos = 0
+#     for item in element:
+#         if item != 0:
+#             print(item, ",", pdic[pos])
+#         pos += 1
+#     print()
+#     print(element)
+
+
+# generate_matrix: Given the parsed vectors, output the big matrix.
+
+def generate_matrix(parsed_vectors, order_difference):
+    matrix = []
+    for vec in parsed_vectors:
+        ideal_rows = generate_ideal(vec, order_difference)
+        for row in ideal_rows:
+            matrix.append(row)
+
+k = parse_vector(get_column_vector(parse_text(text))[1])
+for i in k:
+    print(i)
 
 '''
 @Global Parameters:
@@ -256,7 +396,7 @@ print(parse_entry("x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110
             Input:
             input_monomial: the monomial input
             Output:
-            monomial_coefficient: the coefficient that should be put in the right index.
+            monomial_coefficient: the coefficient that should be put in the respective index.
             
     parse_monomial: Given a monomial in string form, return its power for x, y, and z.
     
