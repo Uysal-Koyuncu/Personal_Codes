@@ -1,4 +1,6 @@
 import re
+import numpy as np
+from numpy.linalg import matrix_rank
 
 text = """| 1 x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110y2z2-48xz3-120yz3-45z4 2x3y+7x2y2+8xy3+3y4+2x3z+22x2yz+44xy2z+24y3z+15x2z2+72xyz2+66y2z2+36xz3+72yz3+27z4 0                                                                                      x3y2-3xy4-2y5-3x2y2z-24xy3z-21y4z-x3z2-14x2yz2-70xy2z2-84y3z2-11x2z3-88xyz3-158y2z3-39xz4-138yz4-45z5 x2y3+2xy4+y5+3x2y2z+12xy3z+9y4z+3x2yz2+24xy2z2+30y3z2+x2z3+20xyz3+46y2z3+6xz4+33yz4+9z5 |
            | 1 -8x3z-40x2yz-64xy2z-32y3z-48x2z2-160xyz2-128y2z2-96xz3-160yz3-64z4                  4x3z+20x2yz+32xy2z+16y3z+24x2z2+80xyz2+64y2z2+48xz3+80yz3+32z4                     x4+6x3y+13x2y2+12xy3+4y4+6x3z+26x2yz+36xy2z+16y3z+13x2z2+36xyz2+24y2z2+12xz3+16yz3+4z4 -12x3yz-60x2y2z-96xy3z-48y4z+12x3z2-12x2yz2-144xy2z2-144y3z2+44x2z3-16xyz3-160y2z3+32xz4-80yz4-16z5   4x3yz+20x2y2z+32xy3z+16y4z-4x3z2+4x2yz2+48xy2z2+48y3z2-16x2z3+48y2z3-16xz4+16yz4        |
@@ -158,8 +160,9 @@ def parse_vector(input_vector):
 #             coefficient: the coefficient that should be put in the right index.
 #         @Auxilliary:
 #             cdic: the dictionary used to represent different results of the coefficient param. (ABANDONED HERE.)
-'''TODO(?): this part needs thorough inspection, some minor edge cases might happen.'''
-
+'''TODO(?): this part needs thorough inspection, some minor edge cases might happen.
+The function does not work properly for integer inputs.
+'''
 
 def monomial_get_coefficient(input_monomial):
 
@@ -167,21 +170,21 @@ def monomial_get_coefficient(input_monomial):
     # print(input_monomial)
     coefficient = re.split('[xyz]', input_monomial)[0]
     monomial = input_monomial[len(coefficient):]
-    if coefficient == "":
+    if coefficient == "" or coefficient == "+":
         coefficient = 1
     elif coefficient == "-":
         coefficient = -1
     else:
         coefficient = int(coefficient)
+    if monomial == "":
+        monomial = "1"
+    #print(monomial)
     param_list.append(coefficient)
     param_list.append(monomial)
 
-    if input_monomial == "0":
-        param_list[0] = 0
-        param_list[1] = "1"
-
     return param_list
 
+#print(monomial_get_coefficient("234"))
 
 # parse_entry: Given a particular entry, parse it into coefficients on different monomials
 #         @Param:
@@ -215,8 +218,9 @@ def parse_entry(input_entry):
     # print(parsed_entry)
     return parsed_entry
 
+# print(parse_entry("1"))
 #print(parse_entry("-x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110y2z2-48xz3-120yz3-45z4"))
-print(parse_vector(get_column_vector(parse_text(text))[1]))
+# print(parse_vector(get_column_vector(parse_text(text))[1]))
 
 
 # parse_monomial: Given a monomial in string form, return its power for x, y, and z.
@@ -329,24 +333,127 @@ def generate_ideal(input_vector, order_difference):
 #     print()
 #     print(element)
 
+# k = parse_vector(get_column_vector(parse_text(text))[1])
+# for i in k:
+#     ideal = generate_ideal(i, 2)
+#     for vec in ideal:
+#         print(vec)
+#     print("nonetheless")
+
+
+# generate_column_ideal: Generate the ideal of the entire column, and result in a list of n*220-length vectors.
+#      Thoughts:
+#      matrix = []
+#      concatenated = []
+#      for i in range(dimension of compensated space):
+#         for j in ideallist:
+#             concatenated.append(ideallist[j][i]'s elements NOT THE LIST ITSELF!)
+#             # or use another iteration to do it.
+#
+#         We now get the 1st compensation of entries 1~n combined.
+#         matrix.append(concatenated)
+#         concatenated = []
+
+def generate_column_ideal(column_vector, order_difference):
+
+    ideal_list = []
+    matrix = []
+    for entry in column_vector:
+        ideal_list.append(generate_ideal(parse_entry(entry), order_difference))
+    concatenated = []
+    for i in range(len(generate_monomial_space(order_difference))):
+        for j in ideal_list:
+            for bit in j[i]:
+                concatenated.append(bit)
+        matrix.append(concatenated)
+        concatenated = []
+
+    return matrix
+
+# k = generate_column_ideal(["1","1","1"],2)
+# for i in k:
+#     print(i)
+
 
 # generate_matrix: Given the parsed vectors, output the big matrix.
 
-def generate_matrix(parsed_vectors, order_difference):
+def generate_matrix(parsed_columns, order_difference):
     matrix = []
-    for vec in parsed_vectors:
-        ideal_rows = generate_ideal(vec, order_difference)
+    for col in parsed_columns:
+        ideal_rows = generate_column_ideal(col, order_difference)
         for row in ideal_rows:
             matrix.append(row)
 
-k = parse_vector(get_column_vector(parse_text(text))[1])
-for i in k:
-    print(i)
+    return matrix
+
+
+# check_matrix: Check if the matrix has property rank(A) = rank(A|b)
+def check_matrix(matrix, new_vector):
+    mA = np.array(matrix)
+    mA = mA.T
+    # print(mA)
+    mb = np.array(new_vector)
+    # print(mb)
+    mA_b = np.c_[mA, mb]
+    rank1 = matrix_rank(mA)
+    rank2 = matrix_rank(mA_b)
+    # print(rank1)
+    # print(rank2)
+    return rank1 != rank2
+
+
+k = generate_matrix(get_column_vector(parse_text(text)),2)
+mb = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+boo = check_matrix(k, mb)
+print(boo)
+# nk = np.array(k)
+# nk = nk.T
+# print(nk)
+# n1k = np.c_[nk,mb]
+# print(n1k)
+# for i in k:
+#     print(i)
+
+
+# cleaner: Get the columns of the input matrix, and then for each new column, check if it creates a new rank. If so,
+#          take it into the set. If not, remove it.
+
+def cleaner(text):
+
+    column_set = []
+    new_order = 0
+    curr_order = 0
+    columns = get_column_vector(parse_text(text))
+    for col in columns:
+        temp_set = column_set
+        new_order = find_highest_order(col)
+        if check_matrix(generate_matrix(column_set, new_order - curr_order), col):
+            column_set.append(col)
+        curr_order = new_order # This better be a "if" update.
+
+    return column_set
+
+# set = []
+# for i in columns:
+#     set1 = set & i
+#     if set1.checkmatrix = true:
+#         set.append(i)
+
+
+
+# making the matrix:
+# neworder = the highest order of the newly added column (the last one), assumed to be >= the previous ones.
+# for each column:
+#      highorder = the highest order of the column's entry polynomials
+#      ideallist = []
+#      for each entry:
+#         ideallist.append(generateideal(entry, neworder - highorder))
+
 
 '''
 @Global Parameters:
     
-    maximum_order: the highest number of orders to describe the polynomial space we are working on
+    maximum_order: the highest number of order of the polynomial space we are working on
 '''
 '''
 @Functions
