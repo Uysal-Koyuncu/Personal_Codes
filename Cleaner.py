@@ -13,7 +13,7 @@ text = """| 1 x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110y2z2-
 
     maximum_order: the highest number of orders to describe the polynomial space we are working on
     MONOMIAL_SET_LENGTH: = 220
-    
+
     mdic: the monomial dictionary
     pdic: the reverse of mdic
         @Function conditional_add: helper function for the mdic construction
@@ -51,6 +51,7 @@ text = """| 1 x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110y2z2-
 
 maximum_order = 10
 MONOMIAL_SET_LENGTH = 220
+
 
 def condition_add(target, coordinate, power):
     if power != 0:
@@ -103,9 +104,6 @@ def parse_text(input_text):
     return rows
 
 
-# print(parse_text(text))
-
-
 # get_column_vector: Get the respective column vectors from the parsed text
 #         @Param:
 #             Input:
@@ -126,9 +124,6 @@ def get_column_vector(input_matrix):
         columns.append(column_temp)
 
     return columns
-
-
-# print(get_column_vector(parse_text(text)))
 
 
 # parse_vector: Given a particular vector, parse it into coefficients on different monomials
@@ -158,18 +153,13 @@ def parse_vector(input_vector):
 #             param_list: the list of returns
 #             monomial: the monomial returned
 #             coefficient: the coefficient that should be put in the right index.
-#         @Auxilliary:
-#             cdic: the dictionary used to represent different results of the coefficient param. (ABANDONED HERE.)
-'''TODO(?): this part needs thorough inspection, some minor edge cases might happen.
-The function does not work properly for integer inputs.
-'''
 
 def monomial_get_coefficient(input_monomial):
 
     param_list = []
-    # print(input_monomial)
     coefficient = re.split('[xyz]', input_monomial)[0]
     monomial = input_monomial[len(coefficient):]
+
     if coefficient == "" or coefficient == "+":
         coefficient = 1
     elif coefficient == "-":
@@ -178,13 +168,12 @@ def monomial_get_coefficient(input_monomial):
         coefficient = int(coefficient)
     if monomial == "":
         monomial = "1"
-    #print(monomial)
+
     param_list.append(coefficient)
     param_list.append(monomial)
 
     return param_list
 
-#print(monomial_get_coefficient("234"))
 
 # parse_entry: Given a particular entry, parse it into coefficients on different monomials
 #         @Param:
@@ -210,17 +199,11 @@ def parse_entry(input_entry):
             if mex != "":
                 param_list = monomial_get_coefficient(mex)
                 mon_coefficient = param_list[0]
-                # print(param_list)
                 mon_position = mdic[param_list[1]]
                 parsed_entry[mon_position] = mon_coefficient
             mex = ""
 
-    # print(parsed_entry)
     return parsed_entry
-
-# print(parse_entry("1"))
-#print(parse_entry("-x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110y2z2-48xz3-120yz3-45z4"))
-# print(parse_vector(get_column_vector(parse_text(text))[1]))
 
 
 # parse_monomial: Given a monomial in string form, return its power for x, y, and z.
@@ -246,12 +229,11 @@ def parse_monomial(monomial):
 
     return coeff_list
 
+
 # monomial_to_string: Give a list of coefficients, generate the monomial string.
 
-
 def monomial_to_string(coeff_list):
-
-    if coeff_list == [0,0,0]:
+    if coeff_list == [0, 0, 0]:
         return "1"
 
     monomial = ""
@@ -275,7 +257,6 @@ def monomial_to_string(coeff_list):
 #         compensated_vector: the compensated vector in R^n form.
 
 def generate_compensated_vector(input_vector, compensator):
-
     compensated_vector = [0] * MONOMIAL_SET_LENGTH
     epos = 0
     for element in input_vector:
@@ -290,8 +271,8 @@ def generate_compensated_vector(input_vector, compensator):
 
     return compensated_vector
 
-# generate_monomial_space: Given a dimension, generate the respective monomial space.
 
+# generate_monomial_space: Given a dimension, generate the respective monomial space.
 
 def generate_monomial_space(dimension):
     mspace = ["1"]
@@ -315,30 +296,11 @@ def generate_monomial_space(dimension):
 #         generated_ideal: the generated ideal.
 
 def generate_ideal(input_vector, order_difference):
-
     generated_ideal = []
     compensation_space = generate_monomial_space(order_difference)
     for some_monomial in compensation_space:
         generated_ideal.append(generate_compensated_vector(input_vector, some_monomial))
     return generated_ideal
-
-# Test Purposes
-# k = generate_ideal(parse_entry("-x4-8x2y2-12xy3-5y4+4x3z-20x2yz-64xy2z-40y3z-8x2z2-100xyz2-110y2z2-48xz3-120yz3-45z4"),1)
-# for element in k:
-#     pos = 0
-#     for item in element:
-#         if item != 0:
-#             print(item, ",", pdic[pos])
-#         pos += 1
-#     print()
-#     print(element)
-
-# k = parse_vector(get_column_vector(parse_text(text))[1])
-# for i in k:
-#     ideal = generate_ideal(i, 2)
-#     for vec in ideal:
-#         print(vec)
-#     print("nonetheless")
 
 
 # generate_column_ideal: Generate the ideal of the entire column, and result in a list of n*220-length vectors.
@@ -355,7 +317,6 @@ def generate_ideal(input_vector, order_difference):
 #         concatenated = []
 
 def generate_column_ideal(column_vector, order_difference):
-
     ideal_list = []
     matrix = []
     for entry in column_vector:
@@ -369,10 +330,6 @@ def generate_column_ideal(column_vector, order_difference):
         concatenated = []
 
     return matrix
-
-# k = generate_column_ideal(["1","1","1"],2)
-# for i in k:
-#     print(i)
 
 
 # generate_matrix: Given the parsed vectors, output the big matrix.
@@ -388,31 +345,39 @@ def generate_matrix(parsed_columns, order_difference):
 
 
 # check_matrix: Check if the matrix has property rank(A) = rank(A|b)
+
 def check_matrix(matrix, new_vector):
+
     mA = np.array(matrix)
     mA = mA.T
-    # print(mA)
     mb = np.array(new_vector)
-    # print(mb)
+
     mA_b = np.c_[mA, mb]
     rank1 = matrix_rank(mA)
     rank2 = matrix_rank(mA_b)
-    # print(rank1)
-    # print(rank2)
+
     return rank1 != rank2
 
 
-k = generate_matrix(get_column_vector(parse_text(text)),2)
-mb = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-boo = check_matrix(k, mb)
-print(boo)
-# nk = np.array(k)
-# nk = nk.T
-# print(nk)
-# n1k = np.c_[nk,mb]
-# print(n1k)
-# for i in k:
-#     print(i)
+# find_highest_order: Find the highest order in a list.
+
+def find_highest_order(vector):
+    order = 0
+    for element in vector:
+        raw = re.split('([-+])', element)
+        mex = ""
+        for mon in raw:
+            if mon == "+" or mon == "-":
+                mex += mon
+            else:
+                mex += mon
+                coeff_list = parse_monomial(mex)
+                sum = coeff_list[0] + coeff_list[1] + coeff_list[2]
+                if sum > order:
+                    order = sum
+                mex = ""
+
+    return order
 
 
 # cleaner: Get the columns of the input matrix, and then for each new column, check if it creates a new rank. If so,
@@ -424,118 +389,23 @@ def cleaner(text):
     new_order = 0
     curr_order = 0
     columns = get_column_vector(parse_text(text))
+    column_set.append(columns[0])
+
     for col in columns:
-        temp_set = column_set
+
         new_order = find_highest_order(col)
-        if check_matrix(generate_matrix(column_set, new_order - curr_order), col):
+        col_long = []
+        for entry in col:
+            monomial_list = parse_entry(entry)
+            for monomial in monomial_list:
+                col_long.append(monomial)
+
+        if check_matrix(generate_matrix(column_set, new_order - curr_order), col_long):
             column_set.append(col)
-        curr_order = new_order # This better be a "if" update.
+        if curr_order < new_order:
+            curr_order = new_order
 
     return column_set
 
-# set = []
-# for i in columns:
-#     set1 = set & i
-#     if set1.checkmatrix = true:
-#         set.append(i)
 
-
-
-# making the matrix:
-# neworder = the highest order of the newly added column (the last one), assumed to be >= the previous ones.
-# for each column:
-#      highorder = the highest order of the column's entry polynomials
-#      ideallist = []
-#      for each entry:
-#         ideallist.append(generateideal(entry, neworder - highorder))
-
-
-'''
-@Global Parameters:
-    
-    maximum_order: the highest number of order of the polynomial space we are working on
-'''
-'''
-@Functions
-
-    parse_text: Parse the text into List-of-List form: DONE
-        @Param:
-            Input:
-            input_text: the text to be processed
-            Output:
-            rows: a List of a List of entries, in String form (e.g. "1", "-8x3z-40x2yz-64xy2z-32y3z-48x2z2-160xyz2-128y2z2-96xz3-160yz3-64z4")
-         
-    get_column_vector: Get the respective column vectors from the parsed text
-        @Param:
-            Input:
-            input_matrix: the List-of-List form of the text
-            Output:
-            columns: a List of vectors, each of which consists of several entries (similar to above "entries")
-    
-    parse_vector: Given a particular vector, parse it into coefficients on different monomials
-        @Param:
-            Input:
-            input_vector: the vector input
-            Output:
-            parsed_vector: the vector with length (input_vector.length * monomial_space.length), and right coefficients
-            
-    parse_entry: Given a particular entry, parse it into coefficients on different monomials
-        @Param:
-            Input:
-            input_entry: the entry input
-            Output:
-            parsed_entry: a list of numbers representing the projection on the monomial space length of this particular 
-            entry.
-        @Using:
-            monomial_str_to_index(monomial in input_entry)
-    
-    monomial_str_to_index: Given a monomial in string form, parse it to the correct index in the dictionary. Done by the
-    mdic[] dictionary.
-        @Param:
-            Input:
-            input_monomial: the monomial input
-            Output:
-            monomial_index: the index in the mdic[] dictionary. Used to sort the monomials into the correct parts.
-            
-    monomial_get_coefficient: Given a monomial in string form, get its coefficient so it could be put in the right
-    index.
-        @Param:
-            Input:
-            input_monomial: the monomial input
-            Output:
-            monomial_coefficient: the coefficient that should be put in the respective index.
-            
-    parse_monomial: Given a monomial in string form, return its power for x, y, and z.
-    
-    monomial_multiplication: Given two monomials, return their product in string form.
-    
-    monomial_to_string: Given a monomial's respective powers, generate its string form so that the compensated monomial
-    could be looked up in the dictionary and now we know where to put the coefficients.
-    
-    generate_ideal: Given a parsed vector, generate its related ideal, given the order-difference.
-        @Param:
-            Input:
-            input_vector: the vector input from parse_vector.
-            order_difference: the number of orders that we have to compensate.
-            Output:
-            generated_ideal:
-        for some_monomial in compensation_space:
-            generated_ideal.append(generate_compensated_vector(input_vector, some_monomial))
-        
-    generate_matrix: Given the parsed vectors, output the big matrix.
-        matrix = []
-        for vec in parsed_vectors:
-            ideal_rows = generate_ideal(vec, order_difference)
-            for row in ideal_rows:
-                matrix.append(row)
-    
-    check_zero_row: Given the matrix, remove all rows that are entirely zero.
-    
-    check_bad_form: Check if 0x=1 form exist in any rows, which could cause no solution.
-    
-    solvable_matrix: See if the matrix have any non-trivial solutions. Boolean.
-    
-    cleaner: Given a set of columns, start from the first 2, and step by step, find if a new one is linearly independent
-    from the first several. Remove all columns that are not.
-
-'''
+print(cleaner(text))
